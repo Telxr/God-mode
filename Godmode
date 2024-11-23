@@ -1,0 +1,115 @@
+-- Create the GUI components
+local function createGUI()
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "ToggleButtonGui"
+    screenGui.ResetOnSpawn = false -- Ensures GUI stays even after respawn
+    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    -- Create the Toggle Button
+    local toggleButton = Instance.new("TextButton")
+    toggleButton.Size = UDim2.new(0, 200, 0, 50)
+    toggleButton.Position = UDim2.new(0, 10, 0, 10) -- Top-left corner with padding
+    toggleButton.Text = "Enable No Damage"
+    toggleButton.BackgroundColor3 = Color3.new(0, 0, 0) -- Black
+    toggleButton.TextSize = 24
+    toggleButton.TextColor3 = Color3.new(1, 1, 1) -- White text
+    toggleButton.Font = Enum.Font.SourceSansBold
+    toggleButton.Parent = screenGui
+
+    -- Add soft, rounded corners to the button
+    local uiCornerButton = Instance.new("UICorner")
+    uiCornerButton.CornerRadius = UDim.new(0, 10) -- Adjust for roundness
+    uiCornerButton.Parent = toggleButton
+
+    -- Create the Reminder Frame
+    local reminderFrame = Instance.new("Frame")
+    reminderFrame.Size = UDim2.new(0, 300, 0, 150)
+    reminderFrame.Position = UDim2.new(0.5, -150, 0.5, -75) -- Center of the screen
+    reminderFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Black
+    reminderFrame.Parent = screenGui
+
+    -- Add soft, rounded corners to the reminder frame
+    local uiCornerFrame = Instance.new("UICorner")
+    uiCornerFrame.CornerRadius = UDim.new(0, 10)
+    uiCornerFrame.Parent = reminderFrame
+
+    -- Create the Reminder Text
+    local reminderText = Instance.new("TextLabel")
+    reminderText.Size = UDim2.new(1, -20, 1, -60) -- Adjusted size to prevent overlap with "X" button
+    reminderText.Position = UDim2.new(0, 10, 0, 10)
+    reminderText.Text = "This effect is client-sided and won't affect other players."
+    reminderText.TextWrapped = true -- Enables word wrapping
+    reminderText.TextColor3 = Color3.new(1, 1, 1) -- White text
+    reminderText.TextSize = 18
+    reminderText.Font = Enum.Font.SourceSans
+    reminderText.BackgroundTransparency = 1 -- Transparent background
+    reminderText.Parent = reminderFrame
+
+    -- Create the Close Button ("X")
+    local closeButton = Instance.new("TextButton")
+    closeButton.Size = UDim2.new(0, 30, 0, 30)
+    closeButton.Position = UDim2.new(1, -35, 0, 5) -- Top-right corner of the frame
+    closeButton.Text = "X"
+    closeButton.TextSize = 20
+    closeButton.TextColor3 = Color3.new(1, 1, 1) -- White text
+    closeButton.BackgroundColor3 = Color3.new(0, 0, 0) -- Black
+    closeButton.Font = Enum.Font.SourceSansBold
+    closeButton.Parent = reminderFrame
+
+    -- Add soft, rounded corners to the close button
+    local uiCornerClose = Instance.new("UICorner")
+    uiCornerClose.CornerRadius = UDim.new(0, 10)
+    uiCornerClose.Parent = closeButton
+
+    -- Close Button Logic
+    closeButton.MouseButton1Click:Connect(function()
+        reminderFrame:Destroy()
+    end)
+
+    return screenGui, toggleButton
+end
+
+-- Main Script Logic
+local player = game.Players.LocalPlayer
+local noDamageEnabled = false
+local healthConnection
+
+-- Function to enable/disable no damage
+local function toggleNoDamage(character, enable)
+    if healthConnection then
+        healthConnection:Disconnect()
+    end
+
+    local humanoid = character:FindFirstChild("Humanoid")
+    if humanoid then
+        if enable then
+            healthConnection = humanoid.HealthChanged:Connect(function()
+                humanoid.Health = humanoid.MaxHealth
+            end)
+        end
+    end
+end
+
+-- GUI Creation
+local screenGui, toggleButton = createGUI()
+
+-- Toggle button logic
+toggleButton.MouseButton1Click:Connect(function()
+    noDamageEnabled = not noDamageEnabled
+    local character = player.Character or player.CharacterAdded:Wait()
+    
+    if noDamageEnabled then
+        toggleButton.Text = "Disable No Damage"
+        toggleNoDamage(character, true)
+    else
+        toggleButton.Text = "Enable No Damage"
+        toggleNoDamage(character, false)
+    end
+end)
+
+-- Ensure no-damage persists across respawns
+player.CharacterAdded:Connect(function(character)
+    if noDamageEnabled then
+        toggleNoDamage(character, true)
+    end
+end)
